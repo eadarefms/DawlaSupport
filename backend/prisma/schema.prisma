@@ -1,0 +1,318 @@
+// ============================================================
+// منصة الدعم التربوي عن بعد — Database Schema (Prisma)
+// PostgreSQL
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+// ------------------------------------------------------------
+// Enums
+// ------------------------------------------------------------
+
+enum Role {
+  ADMIN
+  REGIONAL_HEAD
+  PROVINCIAL_COORDINATOR
+  TEACHER
+  STUDENT
+}
+
+enum SessionStatus {
+  PROPOSED // مقترحة
+  UNDER_REVIEW // قيد المراجعة
+  APPROVED // مقبولة
+  SCHEDULED // مبرمجة
+  COMPLETED // مكتملة
+  CANCELLED // ملغاة
+}
+
+enum MeetingProviderType {
+  MANUAL
+  JITSI
+  TEAMS
+  GOOGLE_MEET
+}
+
+enum NotificationType {
+  SESSION_APPROVED
+  NEW_ENROLLMENT
+  SESSION_REMINDER
+  MEETING_LINK_CHANGED
+  CERTIFICATE_EARNED
+  SESSION_CANCELLED
+}
+
+// ------------------------------------------------------------
+// Core identity
+// ------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  // اسم المستخدم الموحّد: رقم التأجير للأستاذ / رمز مسار للتلميذ / بريد إلكتروني للأدوار الإدارية
+  username     String   @unique
+  fullName     String?
+  passwordHash String
+  role         Role
+  email        String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  resetToken   String?  @unique
+  resetTokenExpiresAt DateTime?
+
+  teacher      Teacher?
+  student      Student?
+  // للمنسق الإقليمي: مديرية واحدة. لرئيس المصلحة/المسؤول: null (نطاق جهوي كامل)
+  provinceId   String?
+  province     Province? @relation(fields: [provinceId], references: [id])
+  notifications Notification[]
+
+  @@index([role])
+}
+
+model Province {
+  id        String   @id @default(cuid())
+  name      String   @unique // مراكش، آسفي، الصويرة...
+  isOther   Boolean  @default(false) // لتمييز خيار "أخرى" العام
+  schools   School[]
+  teachers  Teacher[]
+  students  Student[]
+  users     User[]
+}
+
+model School {
+  id         String    @id @default(cuid())
+  name       String
+  provinceId String
+  province   Province  @relation(fields: [provinceId], references: [id])
+  teachers   Teacher[]
+  students   Student[]
+
+  @@unique([name, provinceId])
+}
+
+// ------------------------------------------------------------
+// Academic structure
+// ------------------------------------------------------------
+
+model Level {
+  id         String        @id @default(cuid())
+  name       String        @unique // السادس ابتدائي، الثالثة إعدادي، الأولى بكالوريا، الثانية بكالوريا
+  order      Int           @default(0)
+  hasStreams Boolean       @default(false)
+  streams    Stream[]
+  subjects   LevelSubject[]
+  teachers   Teacher[]
+  students   Student[]
+  sessions   Session[]
+}
+
+model Stream {
+  id       String    @id @default(cuid())
+  name     String // العلوم التجريبية، العلوم الرياضية...
+  levelId  String
+  level    Level     @relation(fields: [levelId], references: [id])
+  teachers Teacher[]
+  students Student[]
+  sessions Session[]
+
+  @@unique([name, levelId])
+}
+
+model Subject {
+  id       String        @id @default(cuid())
+  name     String        @unique // الرياضيات، الفيزياء والكيمياء...
+  levels   LevelSubject[]
+  sessions Session[]
+}
+
+// جدول ربط: المواد المتاحة لكل مستوى (نفس اللائحة لكل الشعب داخل المستوى)
+model LevelSubject {
+  levelId   String
+  subjectId String
+  level     Level   @relation(fields: [levelId], references: [id])
+  subject   Subject @relation(fields: [subjectId], references: [id])
+
+  @@id([levelId, subjectId])
+}
+
+model SchoolYear {
+  id       String   @id @default(cuid())
+  label    String   @unique // "2026/2027"
+  isActive Boolean  @default(false)
+
+  sessions     Session[]
+  certificates Certificate[]
+}
+
+// ------------------------------------------------------------
+// People
+// ------------------------------------------------------------
+
+model Teacher {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName        String
+  matricule       String  @unique // رقم التأجير
+  email           String
+  provinceId      String
+  province        Province @relation(fields: [provinceId], references: [id])
+  otherProvince   String? // عند اختيار "أخرى"
+  schoolId        String?
+  school          School? @relation(fields: [schoolId], references: [id])
+  // تفضيلات اختيارية لتسريع اقتراح الحصص (ليست إلزامية)
+  levelId         String?
+  level           Level?  @relation(fields: [levelId], references: [id])
+  streamId        String?
+  stream          Stream? @relation(fields: [streamId], references: [id])
+
+  sessions        Session[]
+  hourLedgers     TeacherHourLedger[]
+  certificates    Certificate[]
+
+  createdAt DateTime @default(now())
+}
+
+model Student {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName      String
+  code          String   @unique // رمز مسار
+  email         String
+  provinceId    String?
+  province      Province? @relation(fields: [provinceId], references: [id])
+  otherProvince String?
+  schoolId      String?
+  school        School?  @relation(fields: [schoolId], references: [id])
+  levelId       String?
+  level         Level?   @relation(fields: [levelId], references: [id])
+  streamId      String?
+  stream        Stream?  @relation(fields: [streamId], references: [id])
+
+  enrollments Enrollment[]
+
+  createdAt DateTime @default(now())
+}
+
+// ------------------------------------------------------------
+// Sessions / Schedule
+// ------------------------------------------------------------
+
+model Session {
+  id            String        @id @default(cuid())
+  title         String // عنوان/موضوع الدرس
+  teacherId     String
+  teacher       Teacher       @relation(fields: [teacherId], references: [id])
+  levelId       String
+  level         Level         @relation(fields: [levelId], references: [id])
+  streamId      String?
+  stream        Stream?       @relation(fields: [streamId], references: [id])
+  subjectId     String
+  subject       Subject       @relation(fields: [subjectId], references: [id])
+  schoolYearId  String
+  schoolYear    SchoolYear    @relation(fields: [schoolYearId], references: [id])
+
+  date          DateTime      // تاريخ الحصة (بدون وقت)
+  startTime     String        // "10:00"
+  endTime       String        // "12:00"
+  durationMin   Int           // محسوبة تلقائيًا من start/end
+
+  status        SessionStatus @default(PROPOSED)
+  meetingLink   String?
+  meetingProvider MeetingProviderType @default(MANUAL)
+  reminderSent  Boolean       @default(false)
+
+  enrollments   Enrollment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // يمنع اقتراح حصتين لنفس الأستاذ في نفس التاريخ/الوقت من جهة قاعدة البيانات
+  @@unique([teacherId, date, startTime])
+  @@index([levelId, streamId, date])
+  @@index([status])
+}
+
+model Enrollment {
+  id         String   @id @default(cuid())
+  studentId  String
+  student    Student  @relation(fields: [studentId], references: [id])
+  sessionId  String
+  session    Session  @relation(fields: [sessionId], references: [id])
+  fullName   String
+  code       String
+  email      String
+  province   String?
+  school     String?
+  registeredAt DateTime @default(now())
+
+  // يمنع تسجيل نفس التلميذ مرتين في نفس الحصة (Backend enforcement)
+  @@unique([studentId, sessionId])
+}
+
+// ------------------------------------------------------------
+// Hours & Certificates
+// ------------------------------------------------------------
+
+// سجل تراكمي لساعات كل أستاذ لكل سنة دراسية (يُحدَّث عند اكتمال كل حصة)
+model TeacherHourLedger {
+  id           String   @id @default(cuid())
+  teacherId    String
+  teacher      Teacher  @relation(fields: [teacherId], references: [id])
+  schoolYearId String
+  totalMinutes Int      @default(0)
+  updatedAt    DateTime @updatedAt
+
+  @@unique([teacherId, schoolYearId])
+}
+
+model Certificate {
+  id              String   @id @default(cuid())
+  teacherId       String
+  teacher         Teacher  @relation(fields: [teacherId], references: [id])
+  schoolYearId    String
+  schoolYear      SchoolYear @relation(fields: [schoolYearId], references: [id])
+  certificateNumber Int    // 1، 2، 3... متسلسل لكل أستاذ
+  hoursThreshold  Int      @default(10)
+  issuedAt        DateTime @default(now())
+
+  @@unique([teacherId, schoolYearId, certificateNumber])
+}
+
+// ------------------------------------------------------------
+// Notifications & Settings
+// ------------------------------------------------------------
+
+model Notification {
+  id        String            @id @default(cuid())
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  message   String
+  isRead    Boolean           @default(false)
+  createdAt DateTime          @default(now())
+
+  @@index([userId, isRead])
+}
+
+model SystemSettings {
+  id              String  @id @default("singleton")
+  academyName     String  @default("الأكاديمية الجهوية للتربية والتكوين مراكش آسفي")
+  serviceName     String  @default("مصلحة التعلم والتكوين عن بعد")
+  logoUrl         String?
+  contactEmail    String?
+  contactPhone    String?
+  platformUrl     String?
+  activeSchoolYearId String?
+  emailProvider   String  @default("smtp") // smtp | none
+}
