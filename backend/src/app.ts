@@ -21,3 +21,8 @@ export function createApp() {
 
   return app;
 }
+
+// Vercel (serverless) كيحتاج default export يكون هو الـ Express app بذاتها
+// (function قابلة للاستدعاء)، ماشي غير factory function.
+const app = createApp();
+export default app;
