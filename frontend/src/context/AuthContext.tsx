@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { api } from "../api/client";
 import { AuthUser } from "../types";
 
 interface AuthContextValue {
@@ -14,6 +15,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const raw = localStorage.getItem("user");
     return raw ? (JSON.parse(raw) as AuthUser) : null;
   });
+
+  // تحديث بيانات الحساب من الخادم عند فتح التطبيق، حتى لا يبقى اسم قديم
+  // مخزنًا في الهاتف بعد تغيير بيانات المستخدم أو إصلاح بيانات تسجيل الدخول.
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    api.get<AuthUser>("/auth/me")
+      .then((res) => {
+        localStorage.setItem("user", JSON.stringify(res.data));
+        setUser(res.data);
+      })
+      .catch(() => {
+        // يعالج interceptor حالة 401، ولا نحتاج إلى إظهار خطأ هنا.
+      });
+  }, []);
 
   function login(token: string, newUser: AuthUser) {
     localStorage.setItem("token", token);

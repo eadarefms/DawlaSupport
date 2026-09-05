@@ -18,7 +18,7 @@ export default function Login() {
     setError(null);
     setLoading(true);
     try {
-      const { data } = await api.post("/auth/login", { username, password });
+      const { data } = await api.post("/auth/login", { username: username.trim(), password });
       login(data.token, data.user);
       navigate("/");
     } catch (err) {

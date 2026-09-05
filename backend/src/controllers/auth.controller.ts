@@ -118,7 +118,13 @@ export async function registerTeacher(req: Request, res: Response) {
 export async function registerStudent(req: Request, res: Response) {
   const data = registerStudentSchema.parse(req.body);
 
-  const existingUser = await prisma.user.findUnique({ where: { username: data.code } });
+  const studentCode = data.code.trim();
+
+  // رمز مسار غير حساس لحالة الأحرف عند تسجيل الدخول (G = g).
+  // نمنع أيضًا إنشاء حسابين يختلفان فقط في حالة الأحرف.
+  const existingUser = await prisma.user.findFirst({
+    where: { username: { equals: studentCode, mode: "insensitive" } },
+  });
   if (existingUser) {
     throw new AppError(409, "يوجد حساب مسجل مسبقًا بنفس رمز مسار");
   }
@@ -159,14 +165,14 @@ export async function registerStudent(req: Request, res: Response) {
 
   const user = await prisma.user.create({
     data: {
-      username: data.code,
+      username: studentCode,
       passwordHash,
       role: "STUDENT",
       email: data.email,
       student: {
         create: {
           fullName: data.fullName,
-          code: data.code,
+          code: studentCode,
           email: data.email,
           provinceId: data.provinceId,
           otherProvince: data.otherProvince,
@@ -197,9 +203,12 @@ export async function registerStudent(req: Request, res: Response) {
 
 export async function login(req: Request, res: Response) {
   const { username, password } = loginSchema.parse(req.body);
+  const loginUsername = username.trim();
 
-  const user = await prisma.user.findUnique({
-    where: { username },
+  // تسجيل الدخول غير حساس لحالة الأحرف، خصوصًا لرمز مسار التلميذ.
+  // مثال: G135446868 و g135446868 يعتبران نفس رمز مسار.
+  const user = await prisma.user.findFirst({
+    where: { username: { equals: loginUsername, mode: "insensitive" } },
     include: { teacher: true, student: true },
   });
 
@@ -223,7 +232,7 @@ export async function login(req: Request, res: Response) {
     user: {
       id: user.id,
       role: user.role,
-      fullName: user.fullName ?? user.teacher?.fullName ?? user.username,
+      fullName: user.fullName ?? user.teacher?.fullName ?? user.student?.fullName ?? user.username,
     },
   });
 }
