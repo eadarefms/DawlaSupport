@@ -43,3 +43,14 @@ body {
 .badge {
   @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium;
 }
+
+/* تحسينات العرض على الهاتف */
+html, body, #root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+button, a {
+  -webkit-tap-highlight-color: transparent;
+}
