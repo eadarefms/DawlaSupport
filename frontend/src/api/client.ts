@@ -1,7 +1,9 @@
 import axios from "axios";
 
 export const api = axios.create({
-  baseURL: "/api/v1",
+  // فـ التطوير المحلي: نستعمل المسار النسبي "/api/v1" (البروكسي ديال Vite كيوجهه لـ localhost:4000)
+  // فـ الإنتاج: نستعمل VITE_API_URL (رابط الباك-إند الكامل على Vercel)
+  baseURL: import.meta.env.VITE_API_URL ?? "/api/v1",
 });
 
 api.interceptors.request.use((config) => {
