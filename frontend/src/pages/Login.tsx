@@ -42,7 +42,7 @@ export default function Login() {
               className="w-32 h-32 object-contain rounded-2xl bg-white shadow-lg p-2"
             />
           </div>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-[#0b2d63] drop-shadow-sm">
+          <h1 className="text-3xl md:text-3xl font-extrabold text-[#0b2d63] drop-shadow-sm whitespace-nowrap">
             منصة الدعم التربوي عن بعد
           </h1>
           <div className="text-lg md:text-xl font-bold text-[#0757c9] mt-2 space-y-1">
