@@ -18,7 +18,7 @@ export default function Login() {
     setError(null);
     setLoading(true);
     try {
-      const { data } = await api.post("/auth/login", { username: username.trim(), password });
+      const { data } = await api.post("/auth/login", { username, password });
       login(data.token, data.user);
       navigate("/");
     } catch (err) {
@@ -113,9 +113,6 @@ export default function Login() {
           </div>
         </div>
 
-        <p className="text-center text-white/60 text-xs mt-4">
-          حسابات تجريبية: admin / chef.service / coord.marrakech / T12345 / M2026001 — كلمة المرور: Passw0rd!
-        </p>
       </div>
     </div>
   );
