@@ -42,12 +42,12 @@ export default function Login() {
               className="w-32 h-32 object-contain rounded-2xl bg-white shadow-lg p-2"
             />
           </div>
-          <h1 className="text-3xl md:text-3xl font-extrabold text-[#0b2d63] drop-shadow-sm whitespace-nowrap">
+          <h1 className="text-3xl md:text-3xl font-extrabold text-white drop-shadow-lg whitespace-nowrap">
             منصة الدعم التربوي عن بعد
           </h1>
-          <div className="text-lg md:text-xl font-bold text-[#0757c9] mt-2 space-y-1">
+          <div className="text-lg md:text-xl font-bold text-white drop-shadow-md mt-2 space-y-1">
             <p>الأكاديمية الجهوية للتربية والتكوين مراكش آسفي</p>
-            <p className="text-base md:text-lg font-bold text-[#163b70]">مصلحة التعلم والتكوين عن بعد</p>
+            <p className="text-base md:text-lg font-bold text-white">مصلحة التعلم والتكوين عن بعد</p>
           </div>
         </div>
 
