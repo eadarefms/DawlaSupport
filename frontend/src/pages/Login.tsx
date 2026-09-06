@@ -29,31 +29,29 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-brand-700 p-4 sm:p-6">
-      <img
-        src="/education-support-background.png"
-        alt=""
-        aria-hidden="true"
-        className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
-      />
-      <div className="absolute inset-0 bg-white/5 pointer-events-none" aria-hidden="true" />
-      <div className="relative z-10 w-full max-w-4xl mx-auto flex min-h-[calc(100vh-2rem)] sm:min-h-[calc(100vh-3rem)] flex-col justify-center">
-        <div className="text-center mb-6 sm:mb-8 text-white drop-shadow-sm">
-          <div className="flex justify-center mb-4 sm:mb-5">
+    <div
+      className="min-h-screen flex items-center justify-center bg-cover bg-center bg-fixed p-4"
+      style={{ backgroundImage: 'url("/login-background-koutoubia.png")' }}
+    >
+      <div className="w-full max-w-md">
+        <div className="text-center mb-6 text-slate-900">
+          <div className="flex justify-center mb-4">
             <img
               src="/logo.jpeg"
               alt="شعار المملكة المغربية ووزارة التربية الوطنية"
-              className="w-32 h-32 sm:w-36 sm:h-36 object-contain rounded-2xl bg-white shadow-lg p-2"
+              className="w-32 h-32 object-contain rounded-2xl bg-white shadow-lg p-2"
             />
           </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight leading-tight text-white">منصة الدعم التربوي عن بعد</h1>
-          <div className="text-lg sm:text-xl md:text-2xl font-semibold text-white mt-3 space-y-1">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-[#0b2d63] drop-shadow-sm">
+            منصة الدعم التربوي عن بعد
+          </h1>
+          <div className="text-lg md:text-xl font-bold text-[#0757c9] mt-2 space-y-1">
             <p>الأكاديمية الجهوية للتربية والتكوين مراكش آسفي</p>
-            <p className="text-base sm:text-lg md:text-xl font-medium text-white/95">مصلحة التعلم والتكوين عن بعد</p>
+            <p className="text-base md:text-lg font-bold text-[#163b70]">مصلحة التعلم والتكوين عن بعد</p>
           </div>
         </div>
 
-        <div className="card w-full max-w-3xl mx-auto shadow-2xl">
+        <div className="card">
           <h2 className="text-lg font-bold mb-4">تسجيل الدخول</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
