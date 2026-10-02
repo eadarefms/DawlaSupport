@@ -18,7 +18,7 @@ const registerTeacherSchema = z.object({
   password: z.string().min(6, "كلمة المرور يجب أن تتكون من 6 خانات على الأقل"),
   provinceId: z.string().min(1, "المديرية الإقليمية مطلوبة"),
   otherProvince: z.string().optional(),
-  schoolId: z.string().optional(),
+  schoolName: z.string().trim().min(2, "المؤسسة التعليمية مطلوبة"),
 });
 
 const registerStudentSchema = z.object({
@@ -85,6 +85,27 @@ export async function registerTeacher(req: Request, res: Response) {
     throw new AppError(409, "يوجد حساب مسجل مسبقًا بنفس رقم التأجير");
   }
 
+  const province = await prisma.province.findUnique({ where: { id: data.provinceId } });
+  if (!province) throw new AppError(400, "المديرية الإقليمية المحددة غير موجودة");
+
+  const schoolName = data.schoolName.trim();
+  let school = await prisma.school.findFirst({
+    where: { name: schoolName, provinceId: data.provinceId },
+  });
+
+  if (!school) {
+    try {
+      school = await prisma.school.create({
+        data: { name: schoolName, provinceId: data.provinceId },
+      });
+    } catch (err: any) {
+      school = await prisma.school.findFirst({
+        where: { name: schoolName, provinceId: data.provinceId },
+      });
+      if (!school) throw err;
+    }
+  }
+
   const passwordHash = await hashPassword(data.password);
 
   const user = await prisma.user.create({
@@ -101,7 +122,7 @@ export async function registerTeacher(req: Request, res: Response) {
           email: data.email,
           provinceId: data.provinceId,
           otherProvince: data.otherProvince,
-          schoolId: data.schoolId || null,
+          schoolId: school.id,
         },
       },
     },

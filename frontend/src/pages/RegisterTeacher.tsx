@@ -36,7 +36,15 @@ export default function RegisterTeacher() {
     setError(null);
     setLoading(true);
     try {
-      const { data } = await api.post("/auth/register/teacher", form);
+      const payload = {
+        ...form,
+        fullName: form.fullName.trim(),
+        matricule: form.matricule.trim(),
+        email: form.email.trim(),
+        schoolName: form.schoolName.trim(),
+        otherProvince: form.otherProvince.trim(),
+      };
+      const { data } = await api.post("/auth/register/teacher", payload);
       login(data.token, data.user);
       navigate("/");
     } catch (err) {
